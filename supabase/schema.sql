@@ -21,16 +21,13 @@ create table if not exists public.votes (
 alter table public.polls enable row level security;
 alter table public.votes enable row level security;
 revoke all on public.polls, public.votes from anon, authenticated;
-grant execute on function public.create_poll(text, jsonb) to anon, authenticated;
-grant execute on function public.get_poll(uuid) to anon, authenticated;
-grant execute on function public.cast_vote(uuid, uuid, uuid) to anon, authenticated;
 
 create or replace function public.create_poll(p_question text, p_options jsonb)
 returns uuid language plpgsql security definer set search_path = public as $$
 declare new_id uuid;
 begin
   if p_question is null or char_length(trim(p_question)) not between 1 and 120 then raise exception 'Question must be 1–120 characters'; end if;
-  if jsonb_typeof(p_options) <> 'array' or jsonb_array_length(p_options) not between 2 and 8 then raise exception 'Add between 2 and 8 options'; end if;
+  if p_options is null or jsonb_typeof(p_options) <> 'array' or jsonb_array_length(p_options) not between 2 and 8 then raise exception 'Add between 2 and 8 options'; end if;
   if exists (select 1 from jsonb_array_elements_text(p_options) x where char_length(trim(x)) not between 1 and 80) then raise exception 'Each option must be 1–80 characters'; end if;
   insert into polls(question, options)
   values (trim(p_question), (select jsonb_agg(jsonb_build_object('id', gen_random_uuid(), 'label', trim(value))) from jsonb_array_elements_text(p_options)))
@@ -58,7 +55,6 @@ begin
   insert into votes(poll_id, option_id, voter_id) values (p_poll_id, p_option_id, p_voter_id);
 exception when unique_violation then raise exception 'You have already voted in this poll'; end; $$;
 
--- Restrict function execution to the public app roles.
 revoke all on function public.create_poll(text, jsonb) from public;
 revoke all on function public.get_poll(uuid) from public;
 revoke all on function public.cast_vote(uuid, uuid, uuid) from public;
