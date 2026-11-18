@@ -8,10 +8,12 @@ Pick One is a free, open-source group polling app. Create a question, add option
 
 - Create a poll with 2–8 options
 - Shareable poll URLs
-- Anonymous voting with one vote per browser identity
+- Named voting: voters choose a display name and names are visible with each choice
+- One case-insensitive display name per poll
+- Voters can update their choice without creating a second vote
 - Live-ish results (the page refreshes results every five seconds)
 - Responsive, mobile-first interface
-- No user accounts or tracking by default
+- No user accounts required
 
 ## Stack
 
@@ -33,7 +35,7 @@ Requirements: Node.js 20.9+ and a Supabase project.
 
 3. In the Supabase SQL Editor, run the contents of [supabase/schema.sql](supabase/schema.sql).
 
-4. Copy `.env.example` to `.env.local` and fill in the project URL and anon key from Supabase → Project Settings → API.
+4. Copy `.env.example` to `.env.local` and fill in the project URL and publishable key from Supabase → Project Settings → API.
 
 5. Start the app:
 
@@ -45,14 +47,15 @@ Requirements: Node.js 20.9+ and a Supabase project.
 
 ## Deploy
 
-Deploy the repository to [Vercel](https://vercel.com/) or another Next.js host. Add `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` as environment variables, then deploy. Run the SQL schema once in the Supabase project before sharing the app.
+Deploy the repository to [Vercel](https://vercel.com/). Add `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` as environment variables, then deploy. Run the SQL schema once in the Supabase project before sharing the app.
 
 ## Security and privacy notes
 
-- Polls and aggregate results are publicly readable by design: anyone with a poll URL can view them.
-- The database stores a random browser identifier to enforce one vote per browser identity. It is not a verified identity; clearing browser storage or switching devices can create another vote.
-- The public client uses only the Supabase anon key. Never expose a service-role key in frontend code.
-- The included SQL functions validate poll options and enforce a unique vote per poll/browser identifier. For a high-traffic public launch, add rate limiting, automated abuse detection, poll expiration/deletion controls, and a privacy review.
+- Polls and named voting results are publicly readable by design: anyone with a poll URL can see voter names and choices. Do not use this for sensitive or confidential decisions.
+- A display name is not a verified identity. The database prevents the same normalized name from being used twice in one poll, but a person can choose another name or impersonate someone else.
+- A browser identifier lets the same browser update its existing vote. Clearing browser storage or switching devices does not authenticate the voter; a duplicate name is rejected rather than verified.
+- The public client uses only the Supabase publishable key. Never expose a service-role key in frontend code.
+- For a high-traffic public launch, add server-side rate limiting, automated abuse detection, poll expiration/deletion controls, and a privacy review.
 
 ## Project status
 
